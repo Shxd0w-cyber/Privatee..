@@ -1,4 +1,4 @@
--- Add a tiny delay to ensure the executor is fully ready to handle UI rendering
+-- Fix for Delta UI compatibility
 task.wait(0.2)
 
 local success, Rayfield = pcall(function()
@@ -6,31 +6,28 @@ local success, Rayfield = pcall(function()
 end)
 
 if not success or not Rayfield then
-   -- Alternative fallback mirror link if the main provider domain stutters
    Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
 end
 
--- Main Window Creation
+-- Mobile-Optimized Main Window Configuration
 local Window = Rayfield:CreateWindow({
-   Name = "Super League Soccer | Made by Akai",
-   LoadingTitle = "Loading SLS Script...",
+   Name = "SLS Hub | Made by Akai",
+   LoadingTitle = "Loading SLS Mobile...",
    LoadingSubtitle = "Made by Akai",
    ConfigurationSaving = { Enabled = false },
    Discord = { Enabled = false },
    KeySystem = false
 })
 
--- Tabs
-local MainTab = Window:CreateTab("Main", 4483362458)
-local CombatTab = Window:CreateTab("Defense & Offense", 4483362458)
+-- Single Main Tab to avoid sidebar rendering bugs on Delta
+local MainTab = Window:CreateTab("Features", 4483362458)
 
--- State Variables (Toggles)
+-- State Variables
 local InfiniteStaminaEnabled = false
 local AutoSaveGoleiro = false
 local HitboxExpansionEnabled = false
 local AutoTackleEnabled = false
 local AutoDribbleEnabled = false
-
 local HitboxSize = 15
 
 -- Roblox Services
@@ -40,7 +37,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 -- ==========================================
--- 1. INFINITE STAMINA LOGIC
+-- FEATURE LOGIC CORE
 -- ==========================================
 task.spawn(function()
     local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -57,9 +54,6 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- 2. AUTO SAVE AND HITBOX EXPANSION LOGIC
--- ==========================================
 RunService.Heartbeat:Connect(function()
     local Character = LocalPlayer.Character
     local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -80,7 +74,6 @@ RunService.Heartbeat:Connect(function()
     if AutoSaveGoleiro and Distance < 30 then
         local Knit = require(ReplicatedStorage.Packages.Knit)
         local ActionController = Knit.GetController("ActionController")
-        
         if ActionController and not ActionController:IsOnCooldown("Save") then
             ActionController:RequestAction("Save")
             if Distance < 15 then
@@ -90,22 +83,15 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ==========================================
--- 3. AUTO TACKLE LOGIC
--- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
         if AutoTackleEnabled then
             local Character = LocalPlayer.Character
             local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-            
             if RootPart then
                 for _, player in pairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local hasBall = player:GetAttribute("HasBall")
-                        local distance = (player.Character.HumanoidRootPart.Position - RootPart.Position).Magnitude
-                        
-                        if hasBall and distance < 12 then
+                        if player:GetAttribute("HasBall") and (player.Character.HumanoidRootPart.Position - RootPart.Position).Magnitude < 12 then
                             local Knit = require(ReplicatedStorage.Packages.Knit)
                             local ActionController = Knit.GetController("ActionController")
                             if ActionController and not ActionController:IsOnCooldown("Tackle") then
@@ -119,21 +105,15 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- 4. AUTO DRIBBLE LOGIC
--- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
         if AutoDribbleEnabled then
             local Character = LocalPlayer.Character
             local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-            
             if RootPart and LocalPlayer:GetAttribute("HasBall") then
                 for _, player in pairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local enemyDistance = (player.Character.HumanoidRootPart.Position - RootPart.Position).Magnitude
-                        
-                        if enemyDistance < 10 then
+                        if (player.Character.HumanoidRootPart.Position - RootPart.Position).Magnitude < 10 then
                             local Knit = require(ReplicatedStorage.Packages.Knit)
                             local ActionController = Knit.GetController("ActionController")
                             if ActionController and not ActionController:IsOnCooldown("Dribble") then
@@ -149,8 +129,11 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- CONTROL PANEL ELEMENTS
+-- UI INTERFACE ELEMENTS (RENDER COMPATIBLE)
 -- ==========================================
+
+MainTab:CreateSection("Movement & Exploits")
+
 MainTab:CreateToggle({
    Name = "Infinite Stamina",
    CurrentValue = false,
@@ -158,26 +141,23 @@ MainTab:CreateToggle({
    Callback = function(Value) InfiniteStaminaEnabled = Value end,
 })
 
-CombatTab:CreateToggle({
-   Name = "Goalkeeper Auto Save (All Balls)",
+MainTab:CreateSection("Gameplay Hacks")
+
+MainTab:CreateToggle({
+   Name = "Goalkeeper Auto Save",
    CurrentValue = false,
    Flag = "AutoSaveToggle",
-   Callback = function(Value)
-      AutoSaveGoleiro = Value
-      if Value then
-          Rayfield:Notify({Name = "GK Mode", Content = "Automated saves activated.", Duration = 3})
-      end
-   end,
+   Callback = function(Value) AutoSaveGoleiro = Value end,
 })
 
-CombatTab:CreateToggle({
+MainTab:CreateToggle({
    Name = "Expand Ball Hitbox",
    CurrentValue = false,
    Flag = "HitboxToggle",
    Callback = function(Value) HitboxExpansionEnabled = Value end,
 })
 
-CombatTab:CreateSlider({
+MainTab:CreateSlider({
    Name = "Hitbox Size Selector",
    Min = 5,
    Max = 50,
@@ -186,22 +166,22 @@ CombatTab:CreateSlider({
    Callback = function(Value) HitboxSize = Value end,
 })
 
-CombatTab:CreateToggle({
-   Name = "Auto Tackle (Automatic Steal)",
+MainTab:CreateToggle({
+   Name = "Auto Tackle",
    CurrentValue = false,
    Flag = "TackleToggle",
    Callback = function(Value) AutoTackleEnabled = Value end,
 })
 
-CombatTab:CreateToggle({
-   Name = "Auto Dribble (Evade Defender)",
+MainTab:CreateToggle({
+   Name = "Auto Dribble",
    CurrentValue = false,
    Flag = "DribbleToggle",
    Callback = function(Value) AutoDribbleEnabled = Value end,
 })
 
 Rayfield:Notify({
-   Name = "Successfully Injected!",
-   Content = "SLS Hub is running cleanly.",
-   Duration = 4,
+   Name = "SLS Mobile Running!",
+   Content = "UI bypass successfully loaded.",
+   Duration = 3,
 })
