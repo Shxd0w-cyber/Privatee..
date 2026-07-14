@@ -1,26 +1,19 @@
--- Fix for Delta UI compatibility
-task.wait(0.2)
+-- Wait for the game to fully load
+repeat task.wait() until game:IsLoaded()
 
-local success, Rayfield = pcall(function()
-   return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-end)
+-- Load the lightweight Kavo UI library
+local Kavo = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
-if not success or not Rayfield then
-   Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
-end
+-- Create the Window (Compact layout for mobile screens)
+local Window = Kavo:CreateTable("SLS Hub", "Made by Akai")
 
--- Mobile-Optimized Main Window Configuration
-local Window = Rayfield:CreateWindow({
-   Name = "SLS Hub | Made by Akai",
-   LoadingTitle = "Loading SLS Mobile...",
-   LoadingSubtitle = "Made by Akai",
-   ConfigurationSaving = { Enabled = false },
-   Discord = { Enabled = false },
-   KeySystem = false
-})
+-- Create the Tabs
+local MainTab = Window:NewTab("Main")
+local CombatTab = Window:NewTab("Offense & Defense")
 
--- Single Main Tab to avoid sidebar rendering bugs on Delta
-local MainTab = Window:CreateTab("Features", 4483362458)
+-- Create Sections
+local MovementSection = MainTab:NewSection("Player Exploits")
+local MatchSection = CombatTab:NewSection("Gameplay Modifiers")
 
 -- State Variables
 local InfiniteStaminaEnabled = false
@@ -37,8 +30,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 -- ==========================================
--- FEATURE LOGIC CORE
+-- FEATURE LOGIC
 -- ==========================================
+
+-- 1. Infinite Stamina
 task.spawn(function()
     local Knit = require(ReplicatedStorage.Packages.Knit)
     local StaminaController = Knit.GetController("StaminaController")
@@ -54,6 +49,7 @@ task.spawn(function()
     end
 end)
 
+-- 2. Auto Save & Hitbox Expansion
 RunService.Heartbeat:Connect(function()
     local Character = LocalPlayer.Character
     local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -83,6 +79,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- 3. Auto Tackle
 task.spawn(function()
     while task.wait(0.1) do
         if AutoTackleEnabled then
@@ -105,6 +102,7 @@ task.spawn(function()
     end
 end)
 
+-- 4. Auto Dribble
 task.spawn(function()
     while task.wait(0.1) do
         if AutoDribbleEnabled then
@@ -129,59 +127,31 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- UI INTERFACE ELEMENTS (RENDER COMPATIBLE)
+-- KAVO UI TOGGLES & INTERFACE
 -- ==========================================
 
-MainTab:CreateSection("Movement & Exploits")
+MovementSection:NewToggle("Infinite Stamina", "Gives you unlimited sprint energy", function(state)
+    InfiniteStaminaEnabled = state
+end)
 
-MainTab:CreateToggle({
-   Name = "Infinite Stamina",
-   CurrentValue = false,
-   Flag = "StaminaToggle",
-   Callback = function(Value) InfiniteStaminaEnabled = Value end,
-})
+MatchSection:NewToggle("Goalkeeper Auto Save", "Automatically blocks incoming shots near the box", function(state)
+    AutoSaveGoleiro = state
+end)
 
-MainTab:CreateSection("Gameplay Hacks")
+MatchSection:NewToggle("Expand Ball Hitbox", "Makes the soccer ball bigger on your screen", function(state)
+    HitboxExpansionEnabled = state
+end)
 
-MainTab:CreateToggle({
-   Name = "Goalkeeper Auto Save",
-   CurrentValue = false,
-   Flag = "AutoSaveToggle",
-   Callback = function(Value) AutoSaveGoleiro = Value end,
-})
+MatchSection:NewSlider("Hitbox Size Selector", "Adjust the size of the ball hitbox", 50, 5, function(value)
+    HitboxSize = value
+end)
 
-MainTab:CreateToggle({
-   Name = "Expand Ball Hitbox",
-   CurrentValue = false,
-   Flag = "HitboxToggle",
-   Callback = function(Value) HitboxExpansionEnabled = Value end,
-})
+MatchSection:NewToggle("Auto Tackle", "Instantly slides and challenges ball carriers near you", function(state)
+    AutoTackleEnabled = state
+end)
 
-MainTab:CreateSlider({
-   Name = "Hitbox Size Selector",
-   Min = 5,
-   Max = 50,
-   CurrentValue = 15,
-   Flag = "HitboxSlider",
-   Callback = function(Value) HitboxSize = Value end,
-})
+MatchSection:NewToggle("Auto Dribble", "Evades incoming defenders automatically when you have the ball", function(state)
+    AutoDribbleEnabled = state
+end)
 
-MainTab:CreateToggle({
-   Name = "Auto Tackle",
-   CurrentValue = false,
-   Flag = "TackleToggle",
-   Callback = function(Value) AutoTackleEnabled = Value end,
-})
-
-MainTab:CreateToggle({
-   Name = "Auto Dribble",
-   CurrentValue = false,
-   Flag = "DribbleToggle",
-   Callback = function(Value) AutoDribbleEnabled = Value end,
-})
-
-Rayfield:Notify({
-   Name = "SLS Mobile Running!",
-   Content = "UI bypass successfully loaded.",
-   Duration = 3,
-})
+print("SLS Kavo Menu Injected Successfully | Made by Akai")
